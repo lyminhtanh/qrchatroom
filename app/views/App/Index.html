@@ -13,10 +13,13 @@
   <br />
   <div>
     <button>Join in an existing room </button>
+
     <div class="container">
-      <p> https://stably-room.com/ </p>
-      <input placeholder="room-name" />
-      <button>Join </button>
+      <form action="{{url "App.GotoRoom"}}">
+        <p> https://stably-room.com/ </p>
+        <input placeholder="room-name" />
+        <button type="submit">Join </button>
+      </form>
     </div>
 
   </div>

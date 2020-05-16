@@ -7,7 +7,10 @@ module:testrunner
 # module:jobs
 
 
-GET     /                                       App.Index
+GET     /                                       App.GotoRoom
+GET     /room                                   Room.RoomPage
+WS      /ws/room                                Room.RoomWebSocket
+
 
 # Ignore favicon requests
 GET     /favicon.ico                            404
