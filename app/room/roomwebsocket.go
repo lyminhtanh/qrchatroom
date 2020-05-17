@@ -3,6 +3,7 @@ package room
 import (
 	"container/list"
 	"fmt"
+	"github.com/revel/log15"
 	"time"
 )
 
@@ -11,82 +12,106 @@ var (
 	chatrooms = make(map[string]ChatRoom)
 )
 
+
 // 2. create new room and add to map
 // 3. Each room has a list of subscibers (devices)
 type ChatRoom struct {
+	// public
 	RoomName string
-	Subscribers *list.List
-	Events *list.List
-	subscribeChan chan Event
-	unsubscribeChan chan Event
+	
+	// private
+	events list.List
+	subscribers *list.List  // list of subscriber{chan Event}
+	subscribeChan chan (chan<- Subscription)
+	unsubscribeChan chan (<-chan Event)
 	messageChan chan Event
 }
+type Subscriber struct {
+	Events *list.List
+	NewEvent chan<- Event
+}
 
-
-
-func createRoom(roomName string) ChatRoom {
+func createRoom(roomName string) *ChatRoom {
 	// Add new room to map
 	room := ChatRoom{
 		RoomName:    roomName,
-		Subscribers: list.New(),
-		Events: list.New(),
-		subscribeChan: make(chan Event),
-		unsubscribeChan: make(chan Event),
+		subscribers: list.New(),
+		
+		subscribeChan: make(chan (chan<- Subscription), 10),
+		unsubscribeChan: make(chan (<-chan Event), 10),
 		messageChan: make(chan Event),
 	}
+	
 	chatrooms[room.RoomName] = room
-	fmt.Printf("createRoom %s", room.RoomName)
-
-
-
-	fmt.Println(room.Events)
+	
 	// Start room as new thread
 	go startRoom(&room)
-
-	return room
+	return &room
 }
 
-func GetRoom(roomName string) ChatRoom {
+func GetRoom(roomName string) *ChatRoom {
 	if room, ok := chatrooms[roomName]; ok {
-		return room
+	log15.Debug("Get existing Room")
+		return &room
 	}
-	fmt.Printf("GetRoom")
-
+	log15.Debug("create new Room")
 	return createRoom(roomName)
 }
 
 // 7. start a room, loop until all subscribers leaves
 func startRoom(room *ChatRoom){
-	fmt.Printf("startRoom")
-
+	log15.Debug("startRoom")
+	log15.Debug(room.RoomName)
 	defer endRoom(room)
 	for {
+		log15.Debug("startRoom fo loop")
 		select {
-			// handle new subscriber
-			case subscriber := <-room.subscribeChan:
-				// 1. push to subsribers of this room
-				fmt.Println("subscriber")
-				fmt.Println(subscriber)
-				fmt.Println(room.Events)
 
-				room.Subscribers.PushBack(subscriber)
-				room.Events.PushBack(subscriber)
-			case unsubscribe := <-room.unsubscribeChan:
+			// handle new subscriber
+			case subscriptionChan := <-room.subscribeChan:
+				log15.Debug("<- subscribeChan event size")
+				// 1. push to subsribers of this room
+
+				// send all events in room into events of current subscriber
+				var events []Event
+				for event := room.events.Front();event != nil; event = event.Next(){
+					events = append(events, event.Value.(Event))
+				}
+				subscriber := make(chan Event)
+
+				room.subscribers.PushBack(subscriber)
+
+				subscriptionChan <- Subscription{
+					Events:   events,
+					NewEvent: subscriber,
+				}
+
+			case unsubscribeChan := <-room.unsubscribeChan:
+				log15.Debug("<- unsubscribeChan")
+
 				// 1. remove from subscribers
-				for subscriber := room.Subscribers.Front(); subscriber != nil; subscriber = subscriber.Next() {
-					if subscriber.Value == unsubscribe.Device {
-						room.Subscribers.Remove(subscriber)
+				for subscriber := room.subscribers.Front(); subscriber != nil; subscriber = subscriber.Next() {
+					if subscriber.Value.(chan Event) == unsubscribeChan {
+						room.subscribers.Remove(subscriber)
 					}
 				}
-				room.Events.PushBack(unsubscribe)
 
 				// Check to close room
-				if room.Subscribers.Len() == 0 {
+				if room.subscribers.Len() == 0 {
 					break
 				}
 			case mes := <-room.messageChan:
-				room.Events.PushBack(mes)
+				// mes is an event of Join, Leave or Message
+				// add to room event
+				room.events.PushBack(mes)
+
+				// send mes to all subscribers, this is also the chan that link to subscription coresponsing device
+				for sub := room.subscribers.Front(); sub != nil; sub = sub.Next(){
+					sub.Value.(chan Event) <- mes
+				}
 		}
+
+
 	}
 }
 
@@ -105,49 +130,84 @@ type Event struct {
 	Message string
 }
 
+// define Subscription
+type Subscription struct {
+	Events []Event
+	NewEvent <-chan Event // avoid sending directly through subsription object 
+							// but allow through subscribers list
+}
+
 // 5. Action Join, Leave, Message
-// 5.1 Subscribe
-func Subscribe(device string, roomName string){
+// 5.1 once Subscribe, device will receive Subscription {All events (limit ~20), and NewEvent chan Event}
+func Subscribe(device string, roomName string) Subscription {
 	// Get room
 	room, ok := chatrooms[roomName]
 	if !ok {
-		fmt.Printf("room %s not found", device)
+		panic("Subscribe failed, chat room not found") 
 	}
-	room.subscribeChan <- Event{
-		Type:      "SUBSCRIBE",
-		Device:    device,
-		Timestamp: time.Now(),
-		Message:   fmt.Sprintf("%s has joined ", device),
-	}
+
+	subscriber := make(chan Subscription)
+	room.subscribeChan <- subscriber
+	return <-subscriber // Subsciption will be sent in the room loop at case <-subscribeChan
+
 }
 
 // 5.2 Leave remove device from room's subscribers
-func UnSubscribe(device string, roomName string){
+func UnSubscribe(roomName string, subscription Subscription){
 	// Get room
 	room, ok := chatrooms[roomName]
 	if !ok {
-		fmt.Printf("room %s not found", device)
+		panic("UnSubscribe failed, room not found")
 	}
-	room.unsubscribeChan <- Event{
-		Type:      "UNSUBSCRIBE",
-		Device:    device,
-		Timestamp: time.Now(),
-		Message:   fmt.Sprintf("%s has left ", device),
-	}
+	room.unsubscribeChan <- subscription.NewEvent
 }
 
 // 5.3 Message send mes from a user to all subscribers
 func Message(device string, mes string, roomName string){
 	// Get room
 	room, ok := chatrooms[roomName]
+
 	if !ok {
-		fmt.Printf("room %s not found", device)
+		return
 	}
-	room.subscribeChan <- Event{
+
+	room.messageChan <- Event{
 		Type:      "MESSAGE",
 		Device:    device,
 		Timestamp: time.Now(),
 		Message:   mes,
+	}
+}
+
+func Join(device string, roomName string){
+	// Get room
+	room, ok := chatrooms[roomName]
+
+	if !ok {
+		panic("Join failed, room not found")
+	}
+
+	room.messageChan <- Event{
+		Type:      "JOIN",
+		Device:    device,
+		Timestamp: time.Now(),
+		Message:   fmt.Sprintf("%s has joined", device),
+	}
+}
+
+func Leave(device string, roomName string){
+	// Get room
+	room, ok := chatrooms[roomName]
+
+	if !ok {
+		panic("Leave failed, room not found")
+	}
+
+	room.messageChan <- Event{
+		Type:      "LEAVE",
+		Device:    device,
+		Timestamp: time.Now(),
+		Message:   fmt.Sprintf("%s has left", device),
 	}
 }
 

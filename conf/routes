@@ -7,7 +7,9 @@ module:testrunner
 # module:jobs
 
 
-GET     /                                       App.GotoRoom
+GET     /                                       App.Index
+GET     /demo                                   App.GotoRoom
+
 GET     /room                                   Room.RoomPage
 WS      /ws/room                                Room.RoomWebSocket
 

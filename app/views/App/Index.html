@@ -16,9 +16,29 @@
 
     <div class="container">
       <form action="{{url "App.GotoRoom"}}">
-        <p> https://stably-room.com/ </p>
-        <input placeholder="room-name" />
-        <button type="submit">Join </button>
+        {{if .flash.error}}
+          <p class="error">
+            {{.flash.error}}
+          </p>
+        {{end}}
+        <p>
+          <label for="nick">Device</label>
+          <input type="text" name="device" id="user">
+        </p>
+        <p>
+          <label for="nick">Room name</label>
+          <select name="roomName">
+            <option></option>
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+          </select>
+        </p>
+        <p>
+          <label></label>
+          <input type="submit" id="enter" value="Enter the chat room">
+        </p>
+
       </form>
     </div>
 
