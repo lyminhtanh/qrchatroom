@@ -12,6 +12,7 @@ type Room struct {
 
 // Run this when go to chat room
 func (c Room) RoomPage(device, roomName string) revel.Result {
+	//c.Request.RemoteAddr
 	return c.Render(device, roomName)
 }
 

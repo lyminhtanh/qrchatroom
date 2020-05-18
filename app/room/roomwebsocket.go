@@ -50,6 +50,8 @@ func createRoom(roomName string) *ChatRoom {
 }
 
 func GetRoom(roomName string) *ChatRoom {
+
+
 	if room, ok := chatrooms[roomName]; ok {
 	log15.Debug("Get existing Room")
 		return &room
@@ -168,7 +170,7 @@ func Message(device string, mes string, roomName string){
 	room, ok := chatrooms[roomName]
 
 	if !ok {
-		return
+		panic("Message failed, room not found")
 	}
 
 	room.messageChan <- Event{
