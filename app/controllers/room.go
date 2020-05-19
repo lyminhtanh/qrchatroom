@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"chatroom/app/room"
+	"fmt"
 	"github.com/revel/log15"
 	"github.com/revel/revel"
 )
@@ -12,7 +13,7 @@ type Room struct {
 
 // Run this when go to chat room
 func (c Room) RoomPage(device, roomName string) revel.Result {
-	//c.Request.RemoteAddr
+	device = c.Request.RemoteAddr
 	return c.Render(device, roomName)
 }
 
@@ -27,7 +28,7 @@ func (c Room) RoomWebSocket(device, roomName string, ws revel.ServerWebSocket) r
 
 	// If room name exist, allow this device to join
 	subscriber := room.Subscribe(device, roomName)
-	defer room.UnSubscribe(device, subscriber)
+	//defer room.UnSubscribe(device, subscriber)
 
 	// Allow device join to room
 	room.Join(device, roomName)
@@ -43,7 +44,7 @@ func (c Room) RoomWebSocket(device, roomName string, ws revel.ServerWebSocket) r
 	newEvents := make(chan string)
 
 	// start new thread to receive messages from devices
-	go receiveFromWs(ws, &newEvents)
+	go receiveFromWs(ws, newEvents)
 
 	for {
 		select {
@@ -55,12 +56,14 @@ func (c Room) RoomWebSocket(device, roomName string, ws revel.ServerWebSocket) r
 			}
 
 		case mes, ok := <-newEvents :
-			log15.Debug("<-newEvents")
+			log15.Debug("<-newEvents!!!")
 			if !ok {
 				log15.Debug("<-newEvents nil")
 				return nil
 			}
 
+			log15.Debug("<-go to messs!!! mes = ")
+			log15.Debug(mes)
 			// otherwise publish message
 			room.Message(device, mes, roomName)
 		}
@@ -69,15 +72,17 @@ func (c Room) RoomWebSocket(device, roomName string, ws revel.ServerWebSocket) r
 	return nil
 }
 
-func receiveFromWs(ws revel.ServerWebSocket, newEvents *chan string) {
+func receiveFromWs(ws revel.ServerWebSocket, newEvents chan string) {
 	var msg string
-	log15.Debug("receiveFromWs")
 	for{
+	log15.Debug("receiveFromWs")
 		error := ws.MessageReceiveJSON(&msg)
 		if error != nil {
-			close(*newEvents)
+			log15.Debug("close(newEvents)")
+			log15.Debug(fmt.Sprintf("%v",error))
+			//close(newEvents)
 			return
 		}
-		*newEvents <- msg
+		newEvents <- msg
 	}
 }

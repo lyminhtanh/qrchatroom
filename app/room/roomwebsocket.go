@@ -100,11 +100,15 @@ func startRoom(room *ChatRoom){
 
 				// Check to close room
 				if room.subscribers.Len() == 0 {
+					log15.Debug("close room")
+
 					break
 				}
 			case mes := <-room.messageChan:
 				// mes is an event of Join, Leave or Message
 				// add to room event
+				log15.Debug("case mes := <-room.messageChan:")
+
 				room.events.PushBack(mes)
 
 				// send mes to all subscribers, this is also the chan that link to subscription coresponsing device
@@ -115,6 +119,9 @@ func startRoom(room *ChatRoom){
 
 
 	}
+
+	log15.Debug("end room loop")
+
 }
 
 // 7. end a room, when all subscribers leaves
@@ -173,6 +180,8 @@ func Message(device string, mes string, roomName string){
 		panic("Message failed, room not found")
 	}
 
+	log15.Debug("room.messageChan")
+	log15.Debug(fmt.Sprintf("%v",room.messageChan))
 	room.messageChan <- Event{
 		Type:      "MESSAGE",
 		Device:    device,
