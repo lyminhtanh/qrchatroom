@@ -48,7 +48,12 @@ func createRoom(roomName string) *ChatRoom {
 	go startRoom(&room)
 	return &room
 }
-
+func CheckRoom(roomName string) bool {
+	if _, ok := chatrooms[roomName]; !ok {
+		return false
+	}
+	return true
+}
 func GetRoom(roomName string) *ChatRoom {
 
 

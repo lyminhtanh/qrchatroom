@@ -3,66 +3,13 @@
 
 <header class="jumbotron" style="background-color:#43a6e4">
   <div class="container">
-    <h1>WELCOM TO ROOM! </h1>
+    <h1 class="text-center" style="color: white">WELCOME TO ROOM </h1>
   </div>
 </header>
 <div>
-  <button>Request new room</button>
-  <br />
-  OR
-  <br />
-  <div>
-    <button>Join in an existing room </button>
-
-    <div class="container">
-      <form action="{{url "App.GotoRoom"}}">
-        {{if .flash.error}}
-          <p class="error">
-            {{.flash.error}}
-          </p>
-        {{end}}
-        <p>
-          <label for="nick">Device</label>
-          <input type="text" name="device" id="user">
-        </p>
-        <p>
-          <label for="nick">Room name</label>
-          <select name="roomName">
-            <option></option>
-            <option value="1">1</option>
-            <option value="2">2</option>
-            <option value="3">3</option>
-          </select>
-        </p>
-        <p>
-          <label></label>
-          <input type="submit" id="enter" value="Enter the chat room">
-        </p>
-
-      </form>
-    </div>
-
-  </div>
-</div>
-
-<div>
-  <h2>Your new room URL:</h2>
-  <div>
-    <a href="https://stably-room.com/coffee001">
-      https://stably-room.com/coffee001</a>
-
-    <h4>Scan QRCode to join in this room</h4>
-    <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAOEAAADhCAMAAAAJbSJIAAAABlBMVEX///8AAABVwtN+AAACjElEQVR4nO3dS47bQAwE0Jn7XzqrAAEit1hFGcYkj8s2P/V0AX997+rrd0U9X3/V5Kcy4Xae8LKHkDBKuJ0nvOwhJIwSHlYfqssafY5o4WmK8G6+CkQYLzxNEd7NV4EI44WnKcK7+SrQh4WT893Vw3h0K0tISEhISEhI+Jxw+RUICQkJCQkJf5bwAHvqJ0JCQkJCQsK9cFKROdo8uZVNEU6vEvZFeDdFOL1K2Bfh3dT3rpbm6KVMuJ0nfPClTLidJ3zwpUy4nSd88KVMuJ0nfPBlmXBb0eoJ47FkTxXhdXM3/pkivG7uxj9ThNfN3fhnivC6uRsvky0DTSI+1RyNExISEhISEl66Jp7Joqh5Ul2M06LlasK4CAknyQinewpeHeO0aLmaMK5SGEWcHIv2PMUgJIxyZOeTzYSE3U+Ed+eTzYR3Jw4bu6tdT/TtDuOEhISEhISEf05NYNHG5XhkHn0OQkJCQkJCwjD0af71wslL91OUh5CQkJCQkLBONtnTVZmekJCQkJCQ8Dnh4wsf/4jbQFER9kcJF4GiIuyPEi4CRUXYHy2F74s4yXEIfRjfUgkJCQkJCQlnFa2O0h/GlzGyIrxpJrweX8bIivCmmfB6fBkjK8Kb5jcKJ8cmOSYv0ZeavBzynNCEhISEhIT/sXCZY5n1jZsJCQkJCQkJ3/B/wFGg6Ho0lZ0nJCQkJCQknAmj9JOpSYzRFyckJCQkJCR8p7BLP7kefVbCF2OHq9HCqAhfNEeBCAl3RfiiOQr0jwgntby6PHpYSJgfWwbqjhISRseWgbqjhITRsWWg7mgp7OoQOsoxaS4TbucJL1+65jLhdp7w8qVrLhNu5wkvX7rmMuF2nvDypWvu6hdwJWEkXvHKCAAAAABJRU5ErkJggg=="
-         alt="qr" />
-  </div>
-</div>
-
-<div class="container">
-  <div class="row">
-    <div class="span6">
-      {{template "flash.html" .}}
-    </div>
-  </div>
+  <form action="{{url "App.RequestNewRoom"}}">
+    <input type="submit" id="requestNewRoom" value="Request new room" class="btn btn-primary center-block">
+  </form>
 </div>
 
 {{template "footer.html" .}}

@@ -9,8 +9,9 @@ module:testrunner
 
 GET     /                                       App.Index
 GET     /demo                                   App.GotoRoom
+GET     /requestnewroom                         App.RequestNewRoom
 
-GET     /room                                   Room.RoomPage
+GET     /room/:roomName                         Room.RoomPage
 WS      /ws/room                                Room.RoomWebSocket
 
 

@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"chatroom/app/qrcode"
 	"chatroom/app/room"
 	"fmt"
 	"github.com/revel/log15"
@@ -14,7 +15,21 @@ type Room struct {
 // Run this when go to chat room
 func (c Room) RoomPage(device, roomName string) revel.Result {
 	device = c.Request.RemoteAddr
-	return c.Render(device, roomName)
+
+	isRoomExist := room.CheckRoom(roomName)
+	if !isRoomExist {
+		return c.NotFound("Room does not exist")
+	}
+	// Generate new Room name -> URL
+	//roomName = "ahihi"
+	roomUrl := fmt.Sprintf("http://%s:%d/room?roomName=%s",revel.HTTPAddr, revel.HTTPPort, roomName)
+
+	// Encode URL
+	qrCodeFileUrl := qrcode.EncodeUrl(roomUrl, roomName)
+
+	fmt.Println("qrCodeFileUrl")
+	fmt.Println(qrCodeFileUrl)
+	return c.Render(device, roomName, qrCodeFileUrl)
 }
 
 // Start this when a room created or user goes to an existing room
