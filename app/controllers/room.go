@@ -2,8 +2,7 @@ package controllers
 
 import (
 	"chatroom/app/room"
-	"fmt"
-	"github.com/revel/log15"
+
 	"github.com/revel/revel"
 )
 
@@ -56,21 +55,16 @@ func (c Room) RoomWebSocket(device, roomName string, ws revel.ServerWebSocket) r
 	for {
 		select {
 		case event := <-subscriber.NewEvent:
-			log15.Debug("ws.MessageSendJSON(&event)")
 			if ws.MessageSendJSON(&event) != nil {
 				// error happens
 				return nil
 			}
 
-		case mes, ok := <-newEvents :
-			log15.Debug("<-newEvents!!!")
+		case mes, ok := <-newEvents:
 			if !ok {
-				log15.Debug("<-newEvents nil")
 				return nil
 			}
 
-			log15.Debug("<-go to messs!!! mes = ")
-			log15.Debug(mes)
 			// otherwise publish message
 			room.Message(device, mes, roomName)
 		}
@@ -81,12 +75,9 @@ func (c Room) RoomWebSocket(device, roomName string, ws revel.ServerWebSocket) r
 
 func receiveFromWs(ws revel.ServerWebSocket, newEvents chan string) {
 	var msg string
-	for{
-	log15.Debug("receiveFromWs")
+	for {
 		error := ws.MessageReceiveJSON(&msg)
 		if error != nil {
-			log15.Debug("close(newEvents)")
-			log15.Debug(fmt.Sprintf("%v",error))
 			//close(newEvents)
 			return
 		}
