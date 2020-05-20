@@ -1,8 +1,8 @@
 {{set . "title" "Chat room"}}
 {{template "header.html" .}}
 
-<h1>Chat room {{.roomName}}
-  <a href="/">Leave the chat room</a></h1>
+<h2>Room <strong>{{.chatroom.RoomName}}</strong> </h2>
+  <a href="/" class="float-lg-right">Leave the chat room</a></h2>
 <div class="container">
 
 
@@ -51,11 +51,10 @@
 <div class="row">
   <h2>Your new room URL:</h2>
   <div>
-    <a href={{.qrCodeFileUrl}}>
-      {{.filePath}}</a>
+    <a href={{.chatroom.RoomAddr}} target="_blank">
+      {{.chatroom.RoomAddr}}</a>
 
-
-    <img src={{.qrCodeFileUrl}}
+    <img src={{.chatroom.QrCodeUrl}}
          alt="qr" />
   </div>
 </div>

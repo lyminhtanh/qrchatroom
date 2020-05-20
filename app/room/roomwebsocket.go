@@ -1,9 +1,12 @@
 package room
 
 import (
+	commonconst "chatroom/app/constants"
+	"chatroom/app/qrcode"
 	"container/list"
 	"fmt"
 	"github.com/revel/log15"
+	"github.com/revel/revel"
 	"time"
 )
 
@@ -17,8 +20,8 @@ var (
 // 3. Each room has a list of subscibers (devices)
 type ChatRoom struct {
 	// public
-	RoomName string
-	
+	RoomName, RoomAddr, QrCodeUrl, QrCodeFilePath string
+
 	// private
 	events list.List
 	subscribers *list.List  // list of subscriber{chan Event}
@@ -32,14 +35,20 @@ type Subscriber struct {
 }
 
 func createRoom(roomName string) *ChatRoom {
+
 	// Add new room to map
+	roomAddr := fmt.Sprintf(commonconst.BASE_ROOM_ADDRESS, revel.HTTPAddr, revel.HTTPPort, roomName)
 	room := ChatRoom{
-		RoomName:    roomName,
+		RoomName: roomName,
+		RoomAddr: roomAddr,
+		QrCodeUrl: qrcode.EncodeUrl(roomAddr, roomName),
+		QrCodeFilePath: qrcode.GetQrFilePathByRoomName(roomName),
+
 		subscribers: list.New(),
-		
 		subscribeChan: make(chan (chan<- Subscription), 10),
 		unsubscribeChan: make(chan (<-chan Event), 10),
 		messageChan: make(chan Event),
+
 	}
 	
 	chatrooms[room.RoomName] = room
@@ -55,7 +64,6 @@ func CheckRoom(roomName string) bool {
 	return true
 }
 func GetRoom(roomName string) *ChatRoom {
-
 
 	if room, ok := chatrooms[roomName]; ok {
 	log15.Debug("Get existing Room")

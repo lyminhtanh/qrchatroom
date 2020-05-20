@@ -1,6 +1,7 @@
 package qrcode
 import (
 	"bytes"
+	commonconst "chatroom/app/constants"
 	"fmt"
 	"github.com/liyue201/goqr"
 	"github.com/revel/revel"
@@ -12,20 +13,20 @@ import (
 )
 
 func EncodeUrl(url, roomName string) string{
-	filePath := fmt.Sprintf("%s\\public\\img\\%s.png", revel.BasePath ,roomName)
+	filePath := fmt.Sprintf(commonconst.BASE_QR_FILE_PATH, revel.BasePath ,roomName)
 	err := qrcode.WriteFile(url, qrcode.Medium, 256, filePath )
 	if err != nil {
 		fmt.Println(err)
 	}
 
-	fmt.Println()
-	fileUrl := 	fmt.Sprintf("http://%s:%d/public/img/%s.png",revel.HTTPAddr, revel.HTTPPort, roomName)
-
-	fmt.Println("fileUrl")
-	fmt.Println(fileUrl)
+	fileUrl := 	fmt.Sprintf(commonconst.BASE_QR_FILE_URL, revel.HTTPAddr, revel.HTTPPort, roomName)
 	return fileUrl
 }
 
+func GetQrFilePathByRoomName(roomName string) string{
+	filePath := 	fmt.Sprintf(commonconst.BASE_QR_FILE_PATH, revel.BasePath ,roomName)
+	return filePath
+}
 
 //qrcode.RecognizeFile(revel.BasePath + "\\public\\img\\sample.png")
 func RecognizeFile(path string) {
