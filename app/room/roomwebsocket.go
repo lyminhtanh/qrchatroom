@@ -34,8 +34,6 @@ type Subscriber struct {
 }
 
 func createRoom(roomName string) *ChatRoom {
-fmt.Println("createRoom")
-fmt.Println(roomName)
 	// Add new room to map
 	roomAddr := fmt.Sprintf(commonconst.BASE_ROOM_ADDRESS, revel.HTTPAddr, revel.HTTPPort, roomName)
 	room := ChatRoom{
@@ -57,8 +55,8 @@ fmt.Println(roomName)
 	return &room
 }
 func CheckRoom(roomName string) bool {
-	fmt.Println("Check room chatrooms[roomName]")
-	fmt.Println(chatrooms[roomName])
+	fmt.Println("CheckRoom chatrooms")
+	fmt.Println(chatrooms)
 	if _, ok := chatrooms[roomName]; !ok {
 		return false
 	}
@@ -111,12 +109,15 @@ func startRoom(room *ChatRoom) {
 
 			// Check to close room
 			if room.subscribers.Len() == 0 {
+				fmt.Println("\t\t\t\troom.endRoom()\n")
+				room.endRoom()
 				break
 			}
 		case mes := <-room.messageChan:
 			// mes is an event of Join, Leave or Message
 			// add to room event
-
+			fmt.Println("mes := <-room.messageChan:")
+			fmt.Println(mes)
 			room.events.PushBack(mes)
 
 			// send mes to all subscribers, this is also the chan that link to subscription coresponsing device
@@ -131,10 +132,17 @@ func startRoom(room *ChatRoom) {
 // 7. end a room, when all subscribers leaves
 func (room ChatRoom) endRoom() {
 	// stop all channels ?
-	fmt.Println("###END rOOM")
+	//close(room.subscribeChan)
+	//close(room.unsubscribeChan)
+	//for subscriber := room.subscribers.Front(); subscriber != nil; subscriber = subscriber.Next() {
+	//		close(subscriber.Value.(chan Event))
+	//		room.subscribers.Remove(subscriber)
+	//}
 	delete(chatrooms, room.RoomName)
+
+	fmt.Println("endRoom chatrooms")
+	fmt.Println(chatrooms)
 	//delete QR code
-	// TODO delete from DB
 }
 
 // 4. Event : join, leave, message
@@ -178,19 +186,20 @@ func UnSubscribe(roomName string, subscription Subscription) {
 }
 
 // 5.3 Message send mes from a user to all subscribers
-func Message(device string, mes string, roomName string) {
+func Message(subscriber Subscription, mes Event, roomName string) {
 	// Get room
 	room, ok := chatrooms[roomName]
 
 	if !ok {
 		panic("Message failed, room not found")
 	}
-	room.messageChan <- Event{
-		Type:      "MESSAGE",
-		Device:    device,
-		Timestamp: time.Now(),
-		Message:   mes,
+	if mes.Type == "QUIT" {
+		room.unsubscribeChan <- subscriber.NewEvent
+		return
 	}
+
+	mes.Timestamp = time.Now()
+	room.messageChan <- mes
 }
 
 func Join(device string, roomName string) {

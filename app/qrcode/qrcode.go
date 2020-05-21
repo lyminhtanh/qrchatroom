@@ -30,7 +30,6 @@ func GetQrFilePathByRoomName(roomName string) string{
 
 //qrcode.RecognizeFile(revel.BasePath + "\\public\\img\\sample.png")
 func RecognizeFile(path string) {
-	fmt.Printf("recognize file: %v\n", path)
 	imgdata, err := ioutil.ReadFile(path)
 	if err != nil {
 		fmt.Printf("%v\n", err)

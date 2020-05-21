@@ -4,7 +4,6 @@ import (
 	. "chatroom/app/constants"
 	"chatroom/app/room"
 	. "chatroom/app/utils"
-	"fmt"
 	"github.com/revel/revel"
 )
 
@@ -27,11 +26,8 @@ func (c App) RequestNewRoom() revel.Result {
 			break
 		}
 		roomName = RandString(ROOM_LEN)
-		fmt.Println(roomName)
 	}
 	// create new room
 	chatroom := room.GetRoom(roomName)
-fmt.Println("chatroom info")
-fmt.Println(chatroom)
 	return c.GotoRoom(chatroom.RoomName)
 }

@@ -2,7 +2,8 @@
 {{template "header.html" .}}
 
 <h2>Room <strong>{{.chatroom.RoomName}}</strong> </h2>
-  <a href="/" class="float-lg-right">Leave the chat room</a></h2>
+  <a href="/" class="float-lg-right" id="leave">Leave the chat room</a></h2>
+
 <div class="container">
 
 
@@ -24,11 +25,11 @@
       </p>
     </div>
     {{raw "<%"}} } %>
-    {{raw "<%"}} if(event.Type == 'leave') { %>
+    {{raw "<%"}} if(event.Type == 'LEAVE') { %>
     <div class="message notice">
       <h2></h2>
       <p>
-        {{raw "<%"}}= event.User %> left the room
+        {{raw "<%"}}= event.Device  %> left the room
       </p>
     </div>
     {{raw "<%"}} } %>
@@ -76,8 +77,24 @@
   }
 
   $('#send').click(function(e) {
-    var message = $('#message').val()
+    var message = {
+      Type: 'MESSAGE',
+      Device: {{.device}},
+      Timestamp: null,
+      Message: $('#message').val()
+    }
+
     $('#message').val('')
+    socket.send(JSON.stringify(message))
+  });
+  $('#leave').click(function(e) {
+
+    var message = {
+      Type: 'LEAVE',
+      Device: {{.device}},
+      Timestamp: null,
+      Message: $('#message').val()
+    }
     socket.send(JSON.stringify(message))
   });
 

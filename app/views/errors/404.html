@@ -1,9 +1,12 @@
+{{template "header.html" .}}
+
 <!DOCTYPE html>
 <html lang="en">
 	<head>
 		<title>Not found</title>
 	</head>
 	<body>
+	<a href="/" class="btn btn-block">Back to home</a>
 {{if eq .RunMode "dev"}}
 {{template "errors/404-dev.html" .}}
 {{else}}
@@ -14,7 +17,9 @@
 	<p>
 		{{.Description}}
 	</p>
+
 	{{end}}
 {{end}}
+
 	</body>
 </html>
