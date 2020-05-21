@@ -1,0 +1,13 @@
+runtime: custom
+env: flex
+
+manual_scaling:
+  instances: 1
+
+resources:
+  cpu: 0.1
+  memory_gb: 0.1
+  disk_size_gb: 1
+
+health_check:
+  enable_health_check: False

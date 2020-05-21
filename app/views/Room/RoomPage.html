@@ -10,17 +10,17 @@
   <script type="text/html" id="message_tmpl">
     {{raw "<%"}} if(event.Type == 'MESSAGE') { %>
     <div class="message <%= event.Device == '{{.device}}' ? 'you' : '' %>">
-      <h2>Device: {{raw "<%"}}= event.Device %></h2>
-      <p>
+      <h4 class="font-italic">Device: {{raw "<%"}}= event.Device %></h4>
+      <p class="">
         {{raw "<%"}}= event.Message %>
       </p>
     </div>
     {{raw "<%"}} } %>
-    {{raw "<%"}} if(event.Type == 'join') { %>
+    {{raw "<%"}} if(event.Type == 'JOIN') { %>
     <div class="message notice">
       <h2></h2>
       <p>
-        {{raw "<%"}}= event.User %> joined the room
+        <strong>{{raw "<%"}}= event.Device %></strong> has joined the room
       </p>
     </div>
     {{raw "<%"}} } %>
@@ -62,7 +62,7 @@
 <script type="text/javascript">
 
   // Create a socket
-  var socket = new WebSocket('ws://'+window.location.host+'/ws/room?device={{.device}}&roomName={{.roomName}}')
+  var socket = new WebSocket('ws://'+window.location.host+'/ws/room?roomName={{.chatroom.RoomName}}&device={{.device}}')
 
   // Display a message
   var display = function(event) {

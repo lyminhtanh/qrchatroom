@@ -2,7 +2,7 @@ package controllers
 
 import (
 	"chatroom/app/room"
-
+	"fmt"
 	"github.com/revel/revel"
 )
 
@@ -12,7 +12,7 @@ type Room struct {
 
 // Run this when go to chat room
 func (c Room) RoomPage(device, roomName string) revel.Result {
-	device = c.Request.RemoteAddr
+	device = c.Request.Header.Get("X-Forwarded-For")
 
 	isRoomExist := room.CheckRoom(roomName)
 	if !isRoomExist {
@@ -30,17 +30,23 @@ func (c Room) RoomWebSocket(device, roomName string, ws revel.ServerWebSocket) r
 		return nil
 	}
 
-	room.GetRoom(roomName)
+	//chatroom :=
+		room.GetRoom(roomName)
 
 	// If room name exist, allow this device to join
 	subscriber := room.Subscribe(device, roomName)
-	//defer room.UnSubscribe(device, subscriber)
+	defer room.UnSubscribe(device, subscriber)
 
 	// Allow device join to room
+	fmt.Println("join ")
+	fmt.Println(device)
+
 	room.Join(device, roomName)
 	defer room.Leave(device, roomName)
 
 	// Send old Events of this room
+	fmt.Println("Print all events archive")
+	fmt.Println(subscriber.Events)
 	for event := range subscriber.Events {
 		if ws.MessageSendJSON(&event) != nil {
 			return nil

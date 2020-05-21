@@ -34,7 +34,8 @@ type Subscriber struct {
 }
 
 func createRoom(roomName string) *ChatRoom {
-
+fmt.Println("createRoom")
+fmt.Println(roomName)
 	// Add new room to map
 	roomAddr := fmt.Sprintf(commonconst.BASE_ROOM_ADDRESS, revel.HTTPAddr, revel.HTTPPort, roomName)
 	room := ChatRoom{
@@ -56,6 +57,8 @@ func createRoom(roomName string) *ChatRoom {
 	return &room
 }
 func CheckRoom(roomName string) bool {
+	fmt.Println("Check room chatrooms[roomName]")
+	fmt.Println(chatrooms[roomName])
 	if _, ok := chatrooms[roomName]; !ok {
 		return false
 	}
@@ -69,9 +72,13 @@ func GetRoom(roomName string) *ChatRoom {
 	return createRoom(roomName)
 }
 
+func LeaveUnexpected() {
+	fmt.Println("LeaveUnexpected")
+}
+
 // 7. start a room, loop until all subscribers leaves
 func startRoom(room *ChatRoom) {
-	defer endRoom(room)
+	defer LeaveUnexpected()
 	for {
 		select {
 
@@ -122,9 +129,11 @@ func startRoom(room *ChatRoom) {
 }
 
 // 7. end a room, when all subscribers leaves
-func endRoom(room *ChatRoom) {
+func (room ChatRoom) endRoom() {
 	// stop all channels ?
+	fmt.Println("###END rOOM")
 	delete(chatrooms, room.RoomName)
+	//delete QR code
 	// TODO delete from DB
 }
 
