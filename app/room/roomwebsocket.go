@@ -5,6 +5,7 @@ import (
 	"chatroom/app/qrcode"
 	"container/list"
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/revel/revel"
@@ -138,6 +139,13 @@ func (room ChatRoom) endRoom() {
 	//		close(subscriber.Value.(chan Event))
 	//		room.subscribers.Remove(subscriber)
 	//}
+	// remove QR image
+	err := os.Remove(room.QrCodeFilePath)
+
+	if err != nil {
+		fmt.Println(err)
+	}
+
 	delete(chatrooms, room.RoomName)
 
 	fmt.Println("endRoom chatrooms")
