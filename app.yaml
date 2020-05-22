@@ -6,8 +6,11 @@ manual_scaling:
 
 resources:
   cpu: 0.1
-  memory_gb: 0.1
-  disk_size_gb: 1
+  memory_gb: 0.9
+  disk_size_gb: 10
 
-health_check:
-  enable_health_check: False
+
+network:
+  forwarded_ports:
+    - 65080
+  instance_tag: websocket

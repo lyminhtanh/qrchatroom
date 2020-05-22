@@ -1,7 +1,9 @@
 package app
 
 import (
+	"fmt"
 	"github.com/revel/revel"
+	"os"
 )
 
 var (
@@ -30,10 +32,11 @@ func init() {
 		revel.ActionInvoker,           // Invoke the action.
 	}
 
+
 	// Register startup functions with OnAppStart
 	// revel.DevMode and revel.RunMode only work inside of OnAppStart. See Example Startup Script
 	// ( order dependent )
-	// revel.OnAppStart(ExampleStartupScript)
+	revel.OnAppStart(ExampleStartupScript)
 	// revel.OnAppStart(InitDB)
 	// revel.OnAppStart(FillCache)
 }
@@ -50,10 +53,17 @@ var HeaderFilter = func(c *revel.Controller, fc []revel.Filter) {
 	fc[0](c, fc[1:]) // Execute the next filter stage.
 }
 
-//func ExampleStartupScript() {
-//	// revel.DevMod and revel.RunMode work here
-//	// Use this script to check for dev mode and set dev/prod startup scripts here!
-//	if revel.DevMode == true {
-//		// Dev mode
-//	}
-//}
+func ExampleStartupScript() {
+	// revel.DevMod and revel.RunMode work here
+	// Use this script to check for dev mode and set dev/prod startup scripts here!
+	if revel.DevMode == true {
+		// Dev mode
+		keypath, kok := revel.Config.String("google.keypath")
+		if !kok {
+			fmt.Println("--- keypath not found")
+			return
+		}
+		os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", keypath)
+	}
+
+}

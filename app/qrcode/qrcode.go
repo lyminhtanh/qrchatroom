@@ -10,6 +10,7 @@ import (
 	_ "image/jpeg"
 	_ "image/png"
 	"io/ioutil"
+	"chatroom/app/gcloud"
 )
 
 func EncodeUrl(url, roomName string) string{
@@ -19,13 +20,18 @@ func EncodeUrl(url, roomName string) string{
 		fmt.Println(err)
 	}
 
-	fileUrl := 	fmt.Sprintf(commonconst.BASE_QR_FILE_URL, revel.HTTPAddr, revel.HTTPPort, roomName)
-	return fileUrl
-}
+	// send to GS
+	if err := gcloud.Write(roomName, filePath); err != nil {
+		panic(err)
+	}
 
-func GetQrFilePathByRoomName(roomName string) string{
-	filePath := 	fmt.Sprintf(commonconst.BASE_QR_FILE_PATH, revel.BasePath ,roomName)
-	return filePath
+	fileUrl, err := gcloud.MakePublic(roomName);
+
+	if err != nil {
+		panic(err)
+	}
+	//fileUrl := 	fmt.Sprintf(commonconst.BASE_QR_FILE_URL, revel.HTTPAddr, revel.HTTPPort, roomName)
+	return fileUrl
 }
 
 //qrcode.RecognizeFile(revel.BasePath + "\\public\\img\\sample.png")

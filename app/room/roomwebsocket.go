@@ -2,10 +2,10 @@ package room
 
 import (
 	commonconst "chatroom/app/constants"
+	"chatroom/app/gcloud"
 	"chatroom/app/qrcode"
 	"container/list"
 	"fmt"
-	"os"
 	"time"
 
 	"github.com/revel/revel"
@@ -36,12 +36,13 @@ type Subscriber struct {
 
 func createRoom(roomName string) *ChatRoom {
 	// Add new room to map
-	roomAddr := fmt.Sprintf(commonconst.BASE_ROOM_ADDRESS, revel.HTTPAddr, revel.HTTPPort, roomName)
+	baseUrl := revel.Config.StringDefault("room.url", fmt.Sprintf(commonconst.BASE_ROOM_ADDRESS, revel.HTTPAddr, revel.HTTPPort))
+	roomAddr := baseUrl + roomName
+
 	room := ChatRoom{
 		RoomName:       roomName,
 		RoomAddr:       roomAddr,
 		QrCodeUrl:      qrcode.EncodeUrl(roomAddr, roomName),
-		QrCodeFilePath: qrcode.GetQrFilePathByRoomName(roomName),
 
 		subscribers:     list.New(),
 		subscribeChan:   make(chan (chan<- Subscription), 10),
@@ -132,16 +133,9 @@ func startRoom(room *ChatRoom) {
 
 // 7. end a room, when all subscribers leaves
 func (room ChatRoom) endRoom() {
-	// stop all channels ?
-	//close(room.subscribeChan)
-	//close(room.unsubscribeChan)
-	//for subscriber := room.subscribers.Front(); subscriber != nil; subscriber = subscriber.Next() {
-	//		close(subscriber.Value.(chan Event))
-	//		room.subscribers.Remove(subscriber)
-	//}
-	// remove QR image
-	err := os.Remove(room.QrCodeFilePath)
 
+	// remove QR image
+	err := gcloud.Delete(room.RoomName)
 	if err != nil {
 		fmt.Println(err)
 	}

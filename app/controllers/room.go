@@ -22,7 +22,10 @@ func (c Room) RoomPage(device, roomName string) revel.Result {
 	}
 
 	chatroom := room.GetRoom(roomName)
-	return c.Render(device, chatroom)
+
+	wsProtocol := revel.Config.StringDefault("ws.type", "ws")
+
+	return c.Render(device, chatroom, wsProtocol)
 }
 
 // Start this when a room created or user goes to an existing room

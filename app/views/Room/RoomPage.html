@@ -1,108 +1,277 @@
 {{set . "title" "Chat room"}}
 {{template "header.html" .}}
 
-<h2>Room <strong>{{.chatroom.RoomName}}</strong> </h2>
-  <a href="/" class="float-lg-right" id="leave">Leave the chat room</a></h2>
 
 <div class="container">
+    <div class="row">
+        <h2 class="float-left">Room <strong>{{.chatroom.RoomName}}</strong></h2>
+        <a href="/" class="float-right" id="leave">Leave the chat room</a></h2>
+    </div>
+    <div class="row">
+        <div class="col-xs-12 col-md-9">
 
+            <div id="thread" class="">
+                <script type="text/html" id="message_tmpl">
+                    {{raw "<%"}} if(event.Type == 'MESSAGE') { %>
+                    <div class="message <%= event.Device == '{{.device}}' ? 'you' : '' %>">
+                        <h4 class="font-italic">Device: {{raw "<%"}}= event.Device %></h4>
+                        <p class="">
+                            {{raw "<%"}}= event.Message %>
+                        </p>
+                    </div>
+                    {{raw "<%"}} } %>
+                    {{raw "<%"}} if(event.Type == 'JOIN') { %>
+                    <div class="message notice">
+                        <h2></h2>
+                        <p>
+                            <strong>{{raw "<%"}}= event.Device %></strong> has joined the room
+                        </p>
+                    </div>
+                    {{raw "<%"}} } %>
+                    {{raw "<%"}} if(event.Type == 'LEAVE') { %>
+                    <div class="message notice">
+                        <h2></h2>
+                        <p>
+                            {{raw "<%"}}= event.Device %> left the room
+                        </p>
+                    </div>
+                    {{raw "<%"}} } %>
+                    {{raw "<%"}} if(event.Type == 'quit') { %>
+                    <div class="message important">
+                        <h2></h2>
+                        <p>
+                            You are now disconnected!
+                        </p>
+                    </div>
+                    {{raw "<%"}} } %>
+                </script>
+            </div>
 
-<div id="thread" class="row">
-  <script type="text/html" id="message_tmpl">
-    {{raw "<%"}} if(event.Type == 'MESSAGE') { %>
-    <div class="message <%= event.Device == '{{.device}}' ? 'you' : '' %>">
-      <h4 class="font-italic">Device: {{raw "<%"}}= event.Device %></h4>
-      <p class="">
-        {{raw "<%"}}= event.Message %>
-      </p>
+            <div id="newMessage">
+                <input type="text" id="message" autocomplete="off" autofocus>
+                <input type="submit" value="send" class="btn btn-danger" id="send">
+            </div>
+        </div>
+        <div class="col-xs-12 col-md-3">
+            <h2>Your new room URL:</h2>
+            <div>
+                <a href={{.chatroom.RoomAddr}} target="_blank">
+                    {{.chatroom.RoomAddr}}</a>
+
+                <img src={{.chatroom.QrCodeUrl}}
+                     alt="qr"/>
+            </div>
+        </div>
+
     </div>
-    {{raw "<%"}} } %>
-    {{raw "<%"}} if(event.Type == 'JOIN') { %>
-    <div class="message notice">
-      <h2></h2>
-      <p>
-        <strong>{{raw "<%"}}= event.Device %></strong> has joined the room
-      </p>
-    </div>
-    {{raw "<%"}} } %>
-    {{raw "<%"}} if(event.Type == 'LEAVE') { %>
-    <div class="message notice">
-      <h2></h2>
-      <p>
-        {{raw "<%"}}= event.Device  %> left the room
-      </p>
-    </div>
-    {{raw "<%"}} } %>
-    {{raw "<%"}} if(event.Type == 'quit') { %>
-    <div class="message important">
-      <h2></h2>
-      <p>
-        You are now disconnected!
-      </p>
-    </div>
-    {{raw "<%"}} } %>
-  </script>
 </div>
 
-<div id="newMessage" class="col-lg-6">
-  <input type="text" id="message" autocomplete="off" autofocus>
-  <input type="submit" value="send" class="btn btn-danger" id="send">
+<div class="container">
+    <div class="wrapper wrapper-content animated fadeInRight">
+        <div class="row">
+            <div class="col-xs-6">
+                <div class="ibox float-e-margins">
+                    <div class="ibox-content">
+                        <p>Chat room</p>
+                        <h3><strong>{{.chatroom.RoomName}}</strong></h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xs-6">
+                <div class="ibox float-e-margins">
+                    <div class="ibox-content pull-right">
+                        <a href="/" id="leave">Leave the chat room</a></h2>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="ibox chat-view">
+                    <div class="ibox-title">
+                        <small class="pull-right text-muted">Last message:  Mon Jan 26 2015 - 18:39:23</small> Chat room panel
+                    </div>
+                    <div class="ibox-content">
+                        <div class="row">
+                            <div class="col-md-9 ">
+                                <div class="chat-discussion">
+
+                                    <div class="chat-message left">
+                                        <img class="message-avatar" src="https://bootdey.com/img/Content/avatar/avatar1.png" alt="">
+                                        <div class="message">
+                                            <a class="message-author" href="#"> Michael Smith </a>
+                                            <span class="message-date"> Mon Jan 26 2015 - 18:39:23 </span>
+                                            <span class="message-content">
+    										Lorem ipsum dolor sit amet, consectetuer adipiscing elit, sed diam nonummy nibh euismod tincidunt ut laoreet dolore magna aliquam erat volutpat.
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div class="chat-message right">
+                                        <img class="message-avatar" src="https://bootdey.com/img/Content/avatar/avatar6.png" alt="">
+                                        <div class="message">
+                                            <a class="message-author" href="#"> Karl Jordan </a>
+                                            <span class="message-date">  Fri Jan 25 2015 - 11:12:36 </span>
+                                            <span class="message-content">
+											Many desktop publishing packages and web page editors now use Lorem Ipsum as their default model text, and a search for 'lorem ipsum' will uncover.
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div class="chat-message right">
+                                        <img class="message-avatar" src="https://bootdey.com/img/Content/avatar/avatar6.png" alt="">
+                                        <div class="message">
+                                            <a class="message-author" href="#"> Michael Smith </a>
+                                            <span class="message-date">  Fri Jan 25 2015 - 11:12:36 </span>
+                                            <span class="message-content">
+											There are many variations of passages of Lorem Ipsum available, but the majority have suffered alteration.
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div class="chat-message left">
+                                        <img class="message-avatar" src="https://bootdey.com/img/Content/avatar/avatar1.png" alt="">
+                                        <div class="message">
+                                            <a class="message-author" href="#"> Alice Jordan </a>
+                                            <span class="message-date">  Fri Jan 25 2015 - 11:12:36 </span>
+                                            <span class="message-content">
+											All the Lorem Ipsum generators on the Internet tend to repeat predefined chunks as necessary, making this the first true generator on the Internet.
+                                                It uses a dictionary of over 200 Latin words.
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div class="chat-message right">
+                                        <img class="message-avatar" src="https://bootdey.com/img/Content/avatar/avatar6.png" alt="">
+                                        <div class="message">
+                                            <a class="message-author" href="#"> Mark Smith </a>
+                                            <span class="message-date">  Fri Jan 25 2015 - 11:12:36 </span>
+                                            <span class="message-content">
+											All the Lorem Ipsum generators on the Internet tend to repeat predefined chunks as necessary, making this the first true generator on the Internet.
+                                                It uses a dictionary of over 200 Latin words.
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                </div>
+
+                            </div>
+                            <div class="col-md-3">
+                                <div class="chat-users">
+
+
+                                    <div class="users-list">
+                                        <div class="chat-user">
+                                            <img class="chat-avatar" src="https://bootdey.com/img/Content/avatar/avatar1.png" alt="">
+                                            <div class="chat-user-name">
+                                                <a href="#">Karl Jordan</a>
+                                            </div>
+                                        </div>
+                                        <div class="chat-user">
+                                            <img class="chat-avatar" src="https://bootdey.com/img/Content/avatar/avatar2.png" alt="">
+                                            <div class="chat-user-name">
+                                                <a href="#">Monica Smith</a>
+                                            </div>
+                                        </div>
+                                        <div class="chat-user">
+                                            <span class="pull-right label label-primary">Online</span>
+                                            <img class="chat-avatar" src="https://bootdey.com/img/Content/avatar/avatar3.png" alt="">
+                                            <div class="chat-user-name">
+                                                <a href="#">Michael Smith</a>
+                                            </div>
+                                        </div>
+                                        <div class="chat-user">
+                                            <span class="pull-right label label-primary">Online</span>
+                                            <img class="chat-avatar" src="https://bootdey.com/img/Content/avatar/avatar4.png" alt="">
+                                            <div class="chat-user-name">
+                                                <a href="#">Janet Smith</a>
+                                            </div>
+                                        </div>
+                                        <div class="chat-user">
+                                            <img class="chat-avatar" src="https://bootdey.com/img/Content/avatar/avatar5.png" alt="">
+                                            <div class="chat-user-name">
+                                                <a href="#">Alice Smith</a>
+                                            </div>
+                                        </div>
+                                        <div class="chat-user">
+                                            <img class="chat-avatar" src="https://bootdey.com/img/Content/avatar/avatar6.png" alt="">
+                                            <div class="chat-user-name">
+                                                <a href="#">Monica Cale</a>
+                                            </div>
+                                        </div>
+                                        <div class="chat-user">
+                                            <img class="chat-avatar" src="https://bootdey.com/img/Content/avatar/avatar7.png" alt="">
+                                            <div class="chat-user-name">
+                                                <a href="#">Mark Jordan</a>
+                                            </div>
+                                        </div>
+                                        <div class="chat-user">
+                                            <span class="pull-right label label-primary">Online</span>
+                                            <img class="chat-avatar" src="https://bootdey.com/img/Content/avatar/avatar8.png" alt="">
+                                            <div class="chat-user-name">
+                                                <a href="#">Janet Smith</a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-lg-12">
+                                <div class="chat-message-form">
+                                    <div class="form-group">
+                                        <textarea class="form-control message-input" name="message" placeholder="Enter message text and press enter"></textarea>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
-<div class="row">
-  <h2>Your new room URL:</h2>
-  <div>
-    <a href={{.chatroom.RoomAddr}} target="_blank">
-      {{.chatroom.RoomAddr}}</a>
 
-    <img src={{.chatroom.QrCodeUrl}}
-         alt="qr" />
-  </div>
-</div>
-</div>
 <script type="text/javascript">
 
-  // Create a socket
-  var socket = new WebSocket('ws://'+window.location.host+'/ws/room?roomName={{.chatroom.RoomName}}&device={{.device}}')
+    // Create a socket
+    var socket = new WebSocket('{{.wsProtocol}}://' + window.location.host + '/ws/room?roomName={{.chatroom.RoomName}}&device={{.device}}')
 
-  // Display a message
-  var display = function(event) {
-    $('#thread').append(tmpl('message_tmpl', {event: event}));
-    $('#thread').scrollTo('max')
-  }
-
-  // Message received on the socket
-  socket.onmessage = function(event) {
-    display(JSON.parse(event.data))
-  }
-
-  $('#send').click(function(e) {
-    var message = {
-      Type: 'MESSAGE',
-      Device: {{.device}},
-      Timestamp: null,
-      Message: $('#message').val()
+    // Display a message
+    var display = function (event) {
+        $('#thread').append(tmpl('message_tmpl', {event: event}));
+        $('#thread').scrollTo('max')
     }
 
-    $('#message').val('')
-    socket.send(JSON.stringify(message))
-  });
-  $('#leave').click(function(e) {
-
-    var message = {
-      Type: 'LEAVE',
-      Device: {{.device}},
-      Timestamp: null,
-      Message: $('#message').val()
+    // Message received on the socket
+    socket.onmessage = function (event) {
+        display(JSON.parse(event.data))
     }
-    socket.send(JSON.stringify(message))
-  });
 
-  $('#message').keypress(function(e) {
-    if(e.charCode == 13 || e.keyCode == 13) {
-      $('#send').click()
-      e.preventDefault()
-    }
-  })
+    $('#send').click(function (e) {
+        var message = {
+            Type: 'MESSAGE',
+            Device: {{.device}},
+            Timestamp: null,
+            Message: $('#message').val()
+        }
+
+        $('#message').val('')
+        socket.send(JSON.stringify(message))
+    });
+    $('#leave').click(function (e) {
+
+        var message = {
+            Type: 'LEAVE',
+            Device: {{.device}},
+            Timestamp: null,
+            Message: $('#message').val()
+        }
+        socket.send(JSON.stringify(message))
+    });
+
+    $('#message').keypress(function (e) {
+        if (e.charCode == 13 || e.keyCode == 13) {
+            $('#send').click()
+            e.preventDefault()
+        }
+    })
 
 </script>
