@@ -2,48 +2,6 @@
 {{template "header.html" .}}
 
 
-<!-- <div class="container">
-    <div class="row">
-        <h2 class="float-left">Room <strong>{{.chatroom.RoomName}}</strong></h2>
-        <a href="/" class="float-right" id="leave">Leave the chat room</a></h2>
-    </div>
-    <div class="row">
-        <div class="col-xs-12 col-md-9">
-
-            <div id="thread" class="">
-                <script type="text/html" id="message_tmpl">
-                    {{raw "<%"}} if(event.Type == 'MESSAGE') { %>
-                    <div class="message <%= event.Device == '{{.device}}' ? 'you' : '' %>">
-                        <h4 class="font-italic">Device: {{raw "<%"}}= event.Device %></h4>
-                        <p class="">
-                            {{raw "<%"}}= event.Message %>
-                        </p>
-                    </div>
-                    {{raw "<%"}} } %>
-
-                </script>
-            </div>
-
-            <div id="newMessage">
-                <input type="text" id="message" autocomplete="off" autofocus>
-                <input type="submit" value="send" class="btn btn-danger" id="send">
-            </div>
-        </div>
-        <div class="col-xs-12 col-md-3">
-            <h2>Your new room URL:</h2>
-            <div>
-                <a href={{.chatroom.RoomAddr}} target="_blank">
-                    {{.chatroom.RoomAddr}}</a>
-
-                <img src={{.chatroom.QrCodeUrl}}
-                     alt="qr"/>
-            </div>
-        </div>
-
-    </div>
-</div> -->
-
-
 <div class="container-fluid">
     <div class="wrapper wrapper-content animated fadeInRight">
         <!-- <div class="row">
@@ -51,7 +9,7 @@
                 <div class="ibox float-e-margins">
                     <div class="ibox-content">
                         <p>Chat room</p>
-                        <h3><strong>{{.chatroom.RoomName}}</strong></h3>
+                        <h3><strong>{{.chatroom.RoomModel.Name}}</strong></h3>
                     </div>
                 </div>
             </div>
@@ -68,7 +26,7 @@
                 <div class="ibox chat-view">
                     <div class="ibox-title">
                         <small class="pull-right text-muted"><a href="/" id="leave">Leave the chat room</a></small> Chat
-                        room <strong>{{.chatroom.RoomName}}</strong>
+                        room <strong>{{.chatroom.RoomModel.Name}}</strong>
                     </div>
                     <div class="ibox-content">
                         <div class="row">
@@ -107,11 +65,11 @@
                                 <div class="chat-users">
                                     <div class="users-list">
                                         <div class="chat-user">
-                                            <a href={{.chatroom.RoomAddr}} target="_blank">
-                                                {{.chatroom.RoomAddr}}</a>
+                                            <a href={{.chatroom.RoomModel.Address}} target="_blank">
+                                                {{.chatroom.RoomModel.Address}}</a>
                                             <div>
 
-                                                <img src={{.chatroom.QrCodeUrl}} class="qr-code"
+                                                <img src={{.chatroom.RoomModel.QrCodeUrl}} class="qr-code"
                                                      alt="qr"/>
                                             </div>
                                         </div>
@@ -143,7 +101,7 @@
 <script type="text/javascript">
 
     // Create a socket
-    var socket = new WebSocket('{{.wsProtocol}}://' + window.location.host + '/ws/room?roomName={{.chatroom.RoomName}}&device={{.device}}')
+    var socket = new WebSocket('{{.wsProtocol}}://' + window.location.host + '/ws/room?roomName={{.chatroom.RoomModel.Name}}&device={{.device}}')
 
     // Display a message
     var display = function (event) {
@@ -157,11 +115,16 @@
     }
 
     $('#send').click(function (e) {
+        const inputVal = $('#message').val()
+        if (!inputVal  || /^\s*$/.test(inputVal)){
+            return
+        }
+
         var message = {
             Type: 'MESSAGE',
             Device: {{.device}},
             Timestamp: null,
-            Message: $('#message').val()
+            Message: inputVal
         }
 
         $('#message').val('')

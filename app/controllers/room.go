@@ -16,15 +16,19 @@ func (c Room) RoomPage(device, roomName string) revel.Result {
 
 	device = c.Request.Header.Get("X-Forwarded-For")
 
-	isRoomExist := room.CheckRoomExist(roomName)
+	isRoomExist, err := room.CheckRoomExist(roomName)
+	if err != nil {
+		c.RenderError(err)
+	}
+
 	if !isRoomExist {
 		return c.NotFound("Room does not exist")
 	}
 
-	chatroom, err := room.GetRoom(roomName)
+	chatroom, err1 := room.GetRoom(roomName)
 
-	if err != nil {
-		panic(err)
+	if err1 != nil {
+		c.RenderError(err1)
 	}
 
 	wsProtocol := revel.Config.StringDefault("ws.type", "ws")
@@ -34,21 +38,24 @@ func (c Room) RoomPage(device, roomName string) revel.Result {
 
 // Start this when a room created or user goes to an existing room
 func (c Room) RoomWebSocket(device, roomName string, ws revel.ServerWebSocket) revel.Result {
-
 	// Check valid ws
 	if ws == nil {
 		return nil
 	}
 
-	room.GetRoom(roomName)
+	chatroom , err := room.GetRoom(roomName)
+
+	if err != nil {
+		c.RenderError(err)
+	}
 
 	// If room name exist, allow this device to join
-	subscriber := room.Subscribe(device, roomName)
+	subscriber := room.Subscribe(device, chatroom)
 	//defer room.UnSubscribe(roomName, subscriber)
 
 
 	// Allow device join to room
-	room.Join(device, roomName)
+	room.Join(device, chatroom)
 	//defer room.Leave(device, roomName)
 
 	for _, event := range subscriber.Events {
@@ -76,10 +83,8 @@ func (c Room) RoomWebSocket(device, roomName string, ws revel.ServerWebSocket) r
 			if !ok {
 				return nil
 			}
-			fmt.Println("<-newEvents")
-			fmt.Println(mes)
 			// otherwise publish message
-			room.Message(subscriber, mes, roomName)
+			room.Message(subscriber, mes, chatroom)
 		}
 	}
 
@@ -90,15 +95,12 @@ func receiveFromWs(ws revel.ServerWebSocket, newEvents chan room.Event) {
 	var msg room.Event
 	for {
 		error := ws.MessageReceiveJSON(&msg)
-		//println(error)
 		if error != nil {
-			//close(newEvents)
-
+			fmt.Println("msg")
+			fmt.Println(msg)
 			newEvents <- room.Event{
 				Type:      "QUIT",
-				Device:    "",
 				Timestamp: time.Time{},
-				Message:   "",
 			}
 			return
 		}

@@ -21,16 +21,21 @@ func (c App) GotoRoom(roomName string) revel.Result {
 
 func (c App) RequestNewRoom() revel.Result {
 	roomName := RandString(ROOM_LEN)
+	// Generate unique room name
 	for {
-		if !room.CheckRoomExist(roomName) {
+		isRoomExist, err := room.CheckRoomExist(roomName)
+		if err != nil {
+			return c.RenderError(err)
+		}
+		if !isRoomExist {
 			break
 		}
 		roomName = RandString(ROOM_LEN)
 	}
-	// create new room
-	chatroom, err := room.GetRoom(roomName)
+	// Create new room
+	_, err := room.GetRoom(roomName)
 	if err != nil {
-		panic(err)
+		c.RenderError(err)
 	}
-	return c.GotoRoom(chatroom.RoomName)
+	return c.GotoRoom(roomName)
 }

@@ -16,3 +16,8 @@ network:
 
 env_variables:
   DB_URI: "/db/prod.db"
+  ROOM_URL: "https://qrchatroom.df.r.appspot.com/room/"
+  GOOGLE_PROJECT_ID: "qrchatroom"
+  GOOGLE_BUCKET: "qrchatroom.appspot.com"
+  WEBSOCKET_TYPE: "wss"
+

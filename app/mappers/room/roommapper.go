@@ -6,14 +6,16 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
-func LoadRoomEvents(roomName string, db *gorm.DB, limit uint) []models.Event {
-	var (
-		room   models.Room
-		events []models.Event
-	)
-	db.Where("name = ?", roomName).First(&room)
+func LoadRoomEvents(room *models.Room, db *gorm.DB, limit uint) []*models.Event {
+	var events []*models.Event
+	var device models.Device
 
 	db.Model(&room).Related(&events).Limit(limit)
+
+	for _, event := range events {
+		db.Model(&event).Related(&device)
+		event.Device = &device
+	}
 
 	return events
 }

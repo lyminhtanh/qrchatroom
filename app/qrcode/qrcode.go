@@ -10,11 +10,11 @@ import (
 	_ "image/png"
 )
 
-func EncodeUrl(url, roomName string) string{
+func EncodeUrl(url, roomName string) (string, error){
 	filePath := fmt.Sprintf(commonconst.BASE_QR_FILE_PATH, revel.BasePath ,roomName)
 	err := qrcode.WriteFile(url, qrcode.Medium, 256, filePath )
 	if err != nil {
-		fmt.Println(err)
+		return "", err
 	}
 
 	// send to GS
@@ -27,9 +27,9 @@ func EncodeUrl(url, roomName string) string{
 	fileUrl, err := cloudClient.MakePublic(roomName);
 
 	if err != nil {
-		panic(err)
+		return "", err
 	}
 	//fileUrl := 	fmt.Sprintf(commonconst.BASE_QR_FILE_URL, revel.HTTPAddr, revel.HTTPPort, roomName)
-	return fileUrl
+	return fileUrl, nil
 }
 

@@ -23,7 +23,6 @@ var (
 
 type ChatRoom struct {
 	// public
-	RoomName, RoomAddr, QrCodeUrl, QrCodeFilePath string
 	RoomModel *models.Room
 
 	// private
@@ -45,11 +44,22 @@ func createRoom(roomName string) (*ChatRoom, error) {
 	// Add new room to map
 	baseUrl := revel.Config.StringDefault("room.url", fmt.Sprintf(commonconst.BASE_ROOM_ADDRESS, revel.HTTPAddr, revel.HTTPPort))
 	roomAddr := baseUrl + roomName
+	qrCodeUrl, err := qrcode.EncodeUrl(roomAddr, roomName)
 
-	room := ChatRoom{
-		RoomName:       roomName,
-		RoomAddr:       roomAddr,
-		QrCodeUrl:      qrcode.EncodeUrl(roomAddr, roomName),
+	if err != nil {
+		return nil, err
+	}
+
+	chatroom := ChatRoom{
+		RoomModel: &models.Room{
+			Model:          gorm.Model{},
+			Name:           roomName,
+			Address:        roomAddr,
+			QrCodeUrl:      qrCodeUrl,
+			QrCodeFilePath: "",
+			Events:         nil,
+			Devices:        nil,
+		},
 
 		subscribers:     list.New(),
 		subscribeChan:   make(chan (chan<- Subscription), 10),
@@ -57,20 +67,7 @@ func createRoom(roomName string) (*ChatRoom, error) {
 		messageChan:     make(chan Event),
 	}
 
-	chatrooms[room.RoomName] = room
-
-	// Start room as new thread
-	go startRoom(&room)
-
-	roomModel := models.Room{
-		Model:          gorm.Model{},
-		Name:           roomName,
-		Address:        roomAddr,
-		QrCodeUrl:      room.QrCodeUrl,
-		QrCodeFilePath: room.QrCodeFilePath,
-		Events:         nil,
-		Devices:        nil,
-	}
+	chatrooms[chatroom.RoomModel.Name] = chatroom
 
 	// Connect to DB
 	db, err := db.Connect()
@@ -82,27 +79,78 @@ func createRoom(roomName string) (*ChatRoom, error) {
 	tx := db.Begin()
 
 	// Create new Room in DB
-	roommapper.Insert(&roomModel, tx)
+	roomModel := roommapper.SelectByName(roomName, db)
 
-	if tx.Error != nil {
-		tx.Rollback()
-		return nil, tx.Error
+	if roomModel.ID == 0 {
+		// Insert new room model
+		roomModel = &models.Room{
+			Model:          gorm.Model{},
+			Name:           roomName,
+			Address:        roomAddr,
+			QrCodeUrl:      chatroom.RoomModel.QrCodeUrl,
+			QrCodeFilePath: chatroom.RoomModel.QrCodeFilePath,
+			Events:         nil,
+			Devices:        nil,
+		}
+		roommapper.Insert(roomModel, tx)
+
+		if tx.Error != nil {
+			tx.Rollback()
+			return nil, tx.Error
+		}
+
+	} else {
+		// Load Info from model to chatroom
+		// send all events in room into events of current subscriber
+		events := roommapper.LoadRoomEvents(roomModel, db, 10)
+		fmt.Println("roomModel")
+		fmt.Println(roomModel)
+		if db.Error != nil {
+			return nil, db.Error
+		}
+
+		for _, eventModel := range events {
+			event := Event{
+				Type:      eventModel.Type,
+				Device:    eventModel.Device.Nickname,
+				Timestamp: eventModel.UpdatedAt,
+				Message:   eventModel.Message,
+			}
+			chatroom.events.PushBack(event)
+		}
+
 	}
 
 	tx.Commit()
 	// End transaction
 
 	// Link db room model to chatroom
-	room.RoomModel = &roomModel
+	chatroom.RoomModel = roomModel
 
-	return &room, nil
+	// Start room as new thread
+	go startRoom(&chatroom)
+
+	return &chatroom, nil
 }
 
-func CheckRoomExist(roomName string) bool {
+func CheckRoomExist(roomName string) (bool, error) {
 	if _, ok := chatrooms[roomName]; !ok {
-		return false
+		// check in DB
+		db, err := db.Connect()
+		defer db.Close()
+		if err != nil {
+			return false, err
+		}
+
+		room := roommapper.SelectByName(roomName, db)
+		if db.Error != nil {
+			return false, db.Error
+		}
+		if room.ID == 0 {
+			return false, nil
+		}
 	}
-	return true
+	return true, nil
 }
 
 func GetRoom(roomName string) (*ChatRoom, error) {
@@ -180,9 +228,9 @@ func (room ChatRoom) endRoom() error {
 	cloudClient := cloud.Client()
 
 	// remove QR image
-	err := cloudClient.Delete(room.RoomName)
+	err := cloudClient.Delete(room.RoomModel.Name)
 	if err != nil {
-		return err
+		//return err
 	}
 
 	// delete from DB
@@ -191,7 +239,7 @@ func (room ChatRoom) endRoom() error {
 		return err
 	}
 
-	delete(chatrooms, room.RoomName)
+	delete(chatrooms, room.RoomModel.Name)
 
 	return nil
 }
@@ -208,13 +256,7 @@ type Event struct {
 
 // 5. Action Join, Leave, Message
 // 5.1 once Subscribe, device will receive Subscription {All events (limit ~20), and NewEvent chan Event}
-func Subscribe(device string, roomName string) Subscription {
-	// Get room
-	room, ok := chatrooms[roomName]
-	if !ok {
-		panic("Subscribe failed, chat room not found")
-	}
-
+func Subscribe(device string, room *ChatRoom) Subscription {
 	subscriber := make(chan Subscription)
 	room.subscribeChan <- subscriber
 	return <-subscriber // Subsciption will be sent in the room loop at case <-subscribeChan
@@ -228,18 +270,14 @@ func UnSubscribe(roomName string, subscription Subscription) {
 	if !ok {
 		panic("UnSubscribe failed, room not found")
 	}
+	fmt.Println("UnSubscribe happens")
 	room.unsubscribeChan <- subscription.NewEvent
 }
 
 // 5.3 Message send mes from a user to all subscribers
-func Message(subscriber Subscription, mes Event, roomName string) {
-	// Get room
-	room, ok := chatrooms[roomName]
-
-	if !ok {
-		panic("Message failed, room not found")
-	}
+func Message(subscriber Subscription, mes Event, room *ChatRoom) {
 	if mes.Type == "QUIT" {
+		fmt.Println("QUIT happens")
 		room.unsubscribeChan <- subscriber.NewEvent
 		return
 	}
@@ -248,14 +286,7 @@ func Message(subscriber Subscription, mes Event, roomName string) {
 	room.messageChan <- mes
 }
 
-func Join(device string, roomName string) error{
-	// Get room
-	room, err := GetRoom(roomName)
-
-	if err != nil {
-		return err
-	}
-
+func Join(device string, room *ChatRoom) error{
 	event := Event{
 		Type:      "JOIN",
 		Device:    device,
@@ -303,7 +334,7 @@ func (chatRoom *ChatRoom) handleEventInDb(event *Event) error{
 	tx := db.Begin()
 
 	// get roomModel
-	roomModel := roommapper.SelectByName(chatRoom.RoomName, tx)
+	roomModel := roommapper.SelectByName(chatRoom.RoomModel.Name, tx)
 
 	// create Device model
 	deviceModel := devicemapper.SelectByName(event.Device, tx)
