@@ -10,7 +10,7 @@ import (
 	_ "image/jpeg"
 	_ "image/png"
 	"io/ioutil"
-	"chatroom/app/gcloud"
+	"chatroom/app/cloud"
 )
 
 func EncodeUrl(url, roomName string) string{
@@ -21,11 +21,13 @@ func EncodeUrl(url, roomName string) string{
 	}
 
 	// send to GS
-	if err := gcloud.Write(roomName, filePath); err != nil {
+	cloudClient := cloud.Client()
+
+	if err := cloudClient.Write(roomName, filePath); err != nil {
 		panic(err)
 	}
 
-	fileUrl, err := gcloud.MakePublic(roomName);
+	fileUrl, err := cloudClient.MakePublic(roomName);
 
 	if err != nil {
 		panic(err)

@@ -2,10 +2,15 @@ package room
 
 import (
 	commonconst "chatroom/app/constants"
-	"chatroom/app/gcloud"
+	"chatroom/app/cloud"
+	"chatroom/app/db"
+	devicemapper "chatroom/app/mappers/device"
+	roommapper "chatroom/app/mappers/room"
+	"chatroom/app/models"
 	"chatroom/app/qrcode"
 	"container/list"
 	"fmt"
+	"github.com/jinzhu/gorm"
 	"time"
 
 	"github.com/revel/revel"
@@ -21,6 +26,7 @@ var (
 type ChatRoom struct {
 	// public
 	RoomName, RoomAddr, QrCodeUrl, QrCodeFilePath string
+	RoomModel *models.Room
 
 	// private
 	events          list.List
@@ -54,6 +60,27 @@ func createRoom(roomName string) *ChatRoom {
 
 	// Start room as new thread
 	go startRoom(&room)
+
+	roomModel := models.Room{
+		Model:          gorm.Model{},
+		Name:           roomName,
+		Address:        roomAddr,
+		QrCodeUrl:      room.QrCodeUrl,
+		QrCodeFilePath: room.QrCodeFilePath,
+		Events:         nil,
+		Devices:        nil,
+	}
+
+	db, err := db.Connect()
+	defer db.Close()
+	if err != nil {
+		panic(err)
+	}
+
+
+	roommapper.Insert(&roomModel, db)
+
+	room.RoomModel = &roomModel
 	return &room
 }
 func CheckRoom(roomName string) bool {
@@ -72,13 +99,8 @@ func GetRoom(roomName string) *ChatRoom {
 	return createRoom(roomName)
 }
 
-func LeaveUnexpected() {
-	fmt.Println("LeaveUnexpected")
-}
-
 // 7. start a room, loop until all subscribers leaves
 func startRoom(room *ChatRoom) {
-	defer LeaveUnexpected()
 	for {
 		select {
 
@@ -126,6 +148,11 @@ func startRoom(room *ChatRoom) {
 			for sub := room.subscribers.Front(); sub != nil; sub = sub.Next() {
 				sub.Value.(chan Event) <- mes
 			}
+
+			// insert to DB new room event
+			room.insertEventModelToDb(&mes)
+
+
 		}
 
 	}
@@ -133,12 +160,16 @@ func startRoom(room *ChatRoom) {
 
 // 7. end a room, when all subscribers leaves
 func (room ChatRoom) endRoom() {
+	cloudClient := cloud.Client()
 
 	// remove QR image
-	err := gcloud.Delete(room.RoomName)
+	err := cloudClient.Delete(room.RoomName)
 	if err != nil {
 		fmt.Println(err)
 	}
+
+	// delete from DB
+	room.deleteRoomFromDb(room.RoomModel)
 
 	delete(chatrooms, room.RoomName)
 
@@ -206,18 +237,72 @@ func Message(subscriber Subscription, mes Event, roomName string) {
 
 func Join(device string, roomName string) {
 	// Get room
-	room, ok := chatrooms[roomName]
+	room:= GetRoom(roomName)
 
-	if !ok {
-		panic("Join failed, room not found")
-	}
+	//if !ok {
+	//	panic("Join failed, room not found")
+	//}
 
-	room.messageChan <- Event{
+	event := Event{
 		Type:      "JOIN",
 		Device:    device,
 		Timestamp: time.Now(),
 		Message:   fmt.Sprintf("%s has joined", device),
 	}
+
+	room.messageChan <- event
+
+}
+
+func (chatRoom *ChatRoom) deleteRoomFromDb(room *models.Room) {
+	db, err := db.Connect()
+	defer db.Close()
+	if err != nil {
+		panic(err)
+	}
+
+	roommapper.DeleteRoom(room, db)
+}
+
+func (chatRoom *ChatRoom) insertEventModelToDb(event *Event) {
+	db, err := db.Connect()
+	defer db.Close()
+	if err != nil {
+		panic(err)
+	}
+
+	// get roomModel
+	roomModel := roommapper.SelectByName(chatRoom.RoomName, db)
+
+	// create Device model
+	deviceModel := devicemapper.SelectByName(event.Device, db)
+	fmt.Println("deviceModel")
+	fmt.Println(deviceModel)
+	if deviceModel.ID == 0 {
+		deviceModel = &models.Device{
+			Model:       gorm.Model{},
+			Nickname:    event.Device,
+			FullAddress: event.Device,
+		}
+	}
+
+	// create event model
+	eventModel := &models.Event{
+		Model:    gorm.Model{},
+		RoomID:   roomModel.ID,
+		Type:     event.Type,
+		Device:   deviceModel,
+		Message:  event.Message,
+	}
+
+	// start transaction
+	tx := db.Begin()
+	roommapper.InsertRoomEvent(roomModel, eventModel, tx)
+	if event.Type == "LEAVE" {
+		roommapper.RemoveDeviceFromRoom(roomModel, event.Device, tx)
+	}
+	tx.Commit()
+	// end transaction
 }
 
 func Leave(device string, roomName string) {

@@ -91,6 +91,11 @@ The directory structure of a generated Revel application:
     tests/            Test suites
 
 
-## Help
+## Next Steps
+1. Apply Dependency Injection (google wire project) set up DB type connection and cloud provider
+
+2. Responsive layout for better displaying on Mobile device
+
+3. Send/ receive media objects
 
 ##

@@ -1,7 +1,11 @@
 package app
 
 import (
+	"chatroom/app/db"
+	roommapper "chatroom/app/mappers/room"
+	"chatroom/app/models"
 	"fmt"
+	"github.com/jinzhu/gorm"
 	"github.com/revel/revel"
 	"os"
 )
@@ -32,10 +36,11 @@ func init() {
 		revel.ActionInvoker,           // Invoke the action.
 	}
 
-
 	// Register startup functions with OnAppStart
 	// revel.DevMode and revel.RunMode only work inside of OnAppStart. See Example Startup Script
 	// ( order dependent )
+	revel.OnAppStart(InitDbScript)
+	//revel.OnAppStart(SeedDbScript)
 	revel.OnAppStart(ExampleStartupScript)
 	// revel.OnAppStart(InitDB)
 	// revel.OnAppStart(FillCache)
@@ -53,10 +58,103 @@ var HeaderFilter = func(c *revel.Controller, fc []revel.Filter) {
 	fc[0](c, fc[1:]) // Execute the next filter stage.
 }
 
+func SeedDbScript() {
+	db, err := db.Connect()
+	if err != nil {
+		panic(err)
+	}
+	defer db.Close()
+
+	// new room
+	device := models.Device{
+		Model:       gorm.Model{},
+		Nickname:    "iphone",
+		FullAddress: "1.1.1.1",
+	}
+
+	event := models.Event{
+		Model:     gorm.Model{},
+		Type:      "JOIN",
+		Device:  &device,
+		Message:   "has joined",
+	}
+
+	room := models.Room{
+		Model:          gorm.Model{},
+		Name:           "AAAAA",
+		Address:        "",
+		QrCodeUrl:      "",
+		QrCodeFilePath: "",
+		Events:         []*models.Event{&event},
+		Devices:        []*models.Device{&device},
+	}
+
+	roommapper.Insert(&room, db)
+	//
+	//fmt.Println("room.Events")
+	//fmt.Println(room.Events)
+	//
+	// add event to new room
+	event = models.Event{
+		Model:     gorm.Model{},
+		Type:      "MESSAGE",
+		Device:  &device,
+		Message:   "has joined",
+	}
+
+	roommapper.InsertRoomEvent(&room, &event, db)
+	//
+	device = models.Device{
+		Model:       gorm.Model{},
+		Nickname:    "android",
+		FullAddress: "1.1.1.2",
+	}
+
+	event = models.Event{
+		Model:     gorm.Model{},
+		Type:      "JOIN",
+		Device:  &device,
+		Message:   "has joined",
+	}
+
+	roommapper.InsertRoomEvent(&room, &event, db)
+	event.ID = 0
+	roommapper.InsertRoomEvent(&room, &event, db)
+
+
+
+
+}
+func InitDbScript() {
+	conn, err := db.Connect()
+	if err != nil {
+		panic(err)
+	}
+	defer conn.Close()
+	conn.DropTableIfExists(models.Room{})
+	conn.DropTableIfExists(models.Event{})
+	conn.DropTableIfExists(models.Device{})
+	conn.DropTableIfExists("room_devices")
+
+	//if !conn.HasTable(&models.Room{}) {
+	//	conn.CreateTable(models.Room{})
+	//}
+	//if !conn.HasTable(&models.Device{}) {
+	//	conn.CreateTable(models.Device{})
+	//}
+	//if !conn.HasTable(&models.Event{}) {
+	//	conn.CreateTable(models.Event{})
+	//}
+
+	conn.AutoMigrate(models.Room{})
+	conn.AutoMigrate(models.Event{})
+	conn.AutoMigrate(models.Device{})
+}
+
 func ExampleStartupScript() {
 	// revel.DevMod and revel.RunMode work here
 	// Use this script to check for dev mode and set dev/prod startup scripts here!
-	if revel.DevMode == true {
+	if revel.DevMode {
 		// Dev mode
 		keypath, kok := revel.Config.String("google.keypath")
 		if !kok {

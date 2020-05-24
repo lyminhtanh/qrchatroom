@@ -6,3 +6,5 @@ const BASE_QR_FILE_PATH = "%s\\public\\img\\%s.png"
 
 
 
+
+

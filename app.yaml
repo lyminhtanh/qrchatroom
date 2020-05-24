@@ -9,8 +9,10 @@ resources:
   memory_gb: 0.9
   disk_size_gb: 10
 
-
 network:
   forwarded_ports:
     - 65080
   instance_tag: websocket
+
+env_variables:
+  DB_URI: "/db/prod.db"

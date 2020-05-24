@@ -217,120 +217,121 @@ body{margin-top:20px;}
     border-radius: 4px;
     margin-top: 1px;
 }
+.qr-code {
+    height: 150px;
+    width: 150px;
+    border: 1px solid #e7eaec;
+    margin-top: 1px;
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+}
 .chat-discussion .chat-message.left .message-avatar {
-    float: left;
-    margin-right: 10px;
+float: left;
+margin-right: 10px;
 }
 .chat-discussion .chat-message.right .message-avatar {
-    float: right;
-    margin-left: 10px;
+float: right;
+margin-left: 10px;
 }
 .message {
-    background-color: #fff;
-    border: 1px solid #e7eaec;
-    text-align: left;
-    display: block;
-    padding: 10px 20px;
-    position: relative;
-    border-radius: 4px;
+background-color: #fff;
+border: 1px solid #e7eaec;
+text-align: left;
+display: block;
+padding: 10px 20px;
+position: relative;
+border-radius: 4px;
 }
 .chat-discussion .chat-message.left .message-date {
-    float: right;
+float: right;
 }
 .chat-discussion .chat-message.right .message-date {
-    float: left;
+float: left;
 }
 .chat-discussion .chat-message.left .message {
-    text-align: left;
-    margin-left: 55px;
+text-align: left;
+margin-left: 55px;
 }
 .chat-discussion .chat-message.right .message {
-    text-align: right;
-    margin-right: 55px;
+text-align: right;
+margin-right: 55px;
 }
 .message-date {
-    font-size: 10px;
-    color: #888888;
+font-size: 10px;
+color: #888888;
 }
 .message-content {
-    display: block;
+display: block;
 }
 .chat-discussion {
-    background: #eee;
-    padding: 15px;
-    height: 400px;
-    overflow-y: auto;
+background: #eee;
+padding: 15px;
+height: 400px;
+overflow-y: auto;
 }
 .chat-users {
-    overflow-y: auto;
-    height: 400px;
+overflow-y: auto;
+height: 400px;
 }
 .chat-message-form .form-group {
-    margin-bottom: 0;
+margin-bottom: 0;
 }
 .ibox {
-    clear: both;
-    margin-bottom: 25px;
-    margin-top: 0;
-    padding: 0;
+clear: both;
+margin-bottom: 25px;
+margin-top: 0;
+padding: 0;
 }
 .ibox.collapsed .ibox-content {
-    display: none;
+display: none;
 }
 .ibox.collapsed .fa.fa-chevron-up:before {
-    content: "\f078";
+content: "\f078";
 }
 .ibox.collapsed .fa.fa-chevron-down:before {
-    content: "\f077";
+content: "\f077";
 }
 .ibox:after,
 .ibox:before {
-    display: table;
+display: table;
 }
 .ibox-title {
-    -moz-border-bottom-colors: none;
-    -moz-border-left-colors: none;
-    -moz-border-right-colors: none;
-    -moz-border-top-colors: none;
-    background-color: #ffffff;
-    border-color: #e7eaec;
-    border-image: none;
-    border-style: solid solid none;
-    border-width: 3px 0 0;
-    color: inherit;
-    margin-bottom: 0;
-    padding: 14px 15px 7px;
-    min-height: 48px;
+
+color: inherit;
+margin-bottom: 0;
+padding: 14px 15px 7px;
+min-height: 0.1vh
 }
 .ibox-content {
-    background-color: #ffffff;
-    color: inherit;
-    padding: 15px 20px 20px 20px;
-    border-color: #e7eaec;
-    border-image: none;
-    border-style: solid solid none;
-    border-width: 1px 0;
+background-color: #ffffff;
+color: inherit;
+padding: 15px 20px 20px 20px;
+border-color: #e7eaec;
+border-image: none;
+border-style: solid solid none;
+border-width: 1px 0;
 }
 .ibox-footer {
-    color: inherit;
-    border-top: 1px solid #e7eaec;
-    font-size: 90%;
-    background: #ffffff;
-    padding: 10px 15px;
+color: inherit;
+border-top: 1px solid #e7eaec;
+font-size: 90%;
+background: #ffffff;
+padding: 10px 15px;
 }
 
 .message-input {
-    height: 90px !important;
+height: 90px !important;
 }
 .form-control, .single-line {
-    background-color: #FFFFFF;
-    background-image: none;
-    border: 1px solid #e5e6e7;
-    border-radius: 1px;
-    color: inherit;
-    display: block;
-    padding: 6px 12px;
-    transition: border-color 0.15s ease-in-out 0s, box-shadow 0.15s ease-in-out 0s;
-    width: 100%;
-    font-size: 14px;
+background-color: #FFFFFF;
+background-image: none;
+border: 1px solid #e5e6e7;
+border-radius: 1px;
+color: inherit;
+display: block;
+padding: 6px 12px;
+transition: border-color 0.15s ease-in-out 0s, box-shadow 0.15s ease-in-out 0s;
+width: 100%;
+font-size: 14px;
 }

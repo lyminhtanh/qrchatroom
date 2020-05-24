@@ -1,4 +1,4 @@
-package gcloud
+package cloud
 
 import (
 	"cloud.google.com/go/storage"
@@ -11,46 +11,23 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"sync"
 	"time"
 )
 
-func Write(object, filePath string) error {
-	// [START upload_file]
-	client, bucket, err := getGCloudInfo()
-	if err != nil {
-		return err
-	}
-	ctx := context.Background()
-	f, err := os.Open(filePath)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-
-	ctx, cancel := context.WithTimeout(ctx, time.Second*50)
-	defer cancel()
-	wc := client.Bucket(bucket).Object(object).NewWriter(ctx)
-	if _, err = io.Copy(wc, f); err != nil {
-		return err
-	}
-	if err := wc.Close(); err != nil {
-		return err
-	}
-	// [END upload_file]
-	return nil
+type GoodleCloud struct {
+	cloudOnce sync.Once
+	client *storage.Client
+	bucket string
 }
 
-func Read(object string) ([]byte, error) {
-	client, bucket, err := getGCloudInfo()
-	if err != nil {
-		return nil, err
-	}
+func (gcloud *GoodleCloud) Read(object string) ([]byte, error) {
 	// [START download_file]
 	ctx := context.Background()
 
 	ctx, cancel := context.WithTimeout(ctx, time.Second*50)
 	defer cancel()
-	rc, err := client.Bucket(bucket).Object(object).NewReader(ctx)
+	rc, err := gcloud.client.Bucket(gcloud.bucket).Object(object).NewReader(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -64,42 +41,70 @@ func Read(object string) ([]byte, error) {
 	// [END download_file]
 }
 
-func MakePublic(object string) (string, error) {
-	client, bucket, err := getGCloudInfo()
-	if err != nil {
-		return "", err
-	}
+func (gcloud *GoodleCloud) MakePublic(object string) (string, error) {
 	// [START public]
 	ctx := context.Background()
 
 	ctx, cancel := context.WithTimeout(ctx, time.Second*10)
 	defer cancel()
-	acl := client.Bucket(bucket).Object(object).ACL()
+	acl := gcloud.client.Bucket(gcloud.bucket).Object(object).ACL()
 	if err := acl.Set(ctx, storage.AllUsers, storage.RoleReader); err != nil {
 		return "", err
 	}
 	// [END public]
-	fileUrl := fmt.Sprintf("https://storage.googleapis.com/%s/%s", bucket, object)
+	fileUrl := fmt.Sprintf("https://storage.googleapis.com/%s/%s", gcloud.bucket, object)
 	return fileUrl, nil
 }
 
-func Delete(object string) error {
-	client, bucket, err := getGCloudInfo()
-	if err != nil {
-		return err
-	}
+func (gcloud *GoodleCloud) Delete(object string) error {
 	// [START delete_file]
 	ctx := context.Background()
 
 	ctx, cancel := context.WithTimeout(ctx, time.Second*10)
 	defer cancel()
-	o := client.Bucket(bucket).Object(object)
+	o := gcloud.client.Bucket(gcloud.bucket).Object(object)
 	if err := o.Delete(ctx); err != nil {
 		return err
 	}
 	// [END delete_file]
 	return nil
 }
+
+func (gcloud *GoodleCloud) Write(object, filePath string) error {
+	ctx := context.Background()
+	f, err := os.Open(filePath)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	ctx, cancel := context.WithTimeout(ctx, time.Second*50)
+	defer cancel()
+	wc := gcloud.client.Bucket(gcloud.bucket).Object(object).NewWriter(ctx)
+	if _, err = io.Copy(wc, f); err != nil {
+		return err
+	}
+	if err := wc.Close(); err != nil {
+		return err
+	}
+	// [END upload_file]
+	return nil
+}
+
+// lazy initialize db
+func GCloudLazyInit() Cloud{
+	g := GoodleCloud{}
+	g.cloudOnce.Do(func() {
+		client, bucket, err := getGCloudInfo()
+		if err != nil {
+			panic(err)
+		}
+		g.client = client
+		g.bucket = bucket
+	})
+	return &g
+}
+
 
 func getGCloudInfo() (client *storage.Client, bucket string, err error) {
 	//projectID := os.Getenv("GOOGLE_CLOUD_PROJECT")
