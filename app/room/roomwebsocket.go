@@ -11,18 +11,16 @@ import (
 	"container/list"
 	"fmt"
 	"github.com/jinzhu/gorm"
+	"github.com/revel/log15"
 	"time"
 
 	"github.com/revel/revel"
 )
 
-// 1. build a map of rooms
 var (
 	chatrooms = make(map[string]ChatRoom)
 )
 
-// 2. create new room and add to map
-// 3. Each room has a list of subscibers (devices)
 type ChatRoom struct {
 	// public
 	RoomName, RoomAddr, QrCodeUrl, QrCodeFilePath string
@@ -35,12 +33,15 @@ type ChatRoom struct {
 	unsubscribeChan chan (<-chan Event)
 	messageChan     chan Event
 }
-type Subscriber struct {
-	Events   *list.List
-	NewEvent chan<- Event
+
+// define Subscription
+type Subscription struct {
+	Events   []Event
+	NewEvent <-chan Event // avoid sending directly through subsription object
+	// but allow through subscribers list
 }
 
-func createRoom(roomName string) *ChatRoom {
+func createRoom(roomName string) (*ChatRoom, error) {
 	// Add new room to map
 	baseUrl := revel.Config.StringDefault("room.url", fmt.Sprintf(commonconst.BASE_ROOM_ADDRESS, revel.HTTPAddr, revel.HTTPPort))
 	roomAddr := baseUrl + roomName
@@ -71,42 +72,54 @@ func createRoom(roomName string) *ChatRoom {
 		Devices:        nil,
 	}
 
+	// Connect to DB
 	db, err := db.Connect()
 	defer db.Close()
 	if err != nil {
-		panic(err)
+		return nil, err
+	}
+	// Start transaction
+	tx := db.Begin()
+
+	// Create new Room in DB
+	roommapper.Insert(&roomModel, tx)
+
+	if tx.Error != nil {
+		tx.Rollback()
+		return nil, tx.Error
 	}
 
+	tx.Commit()
+	// End transaction
 
-	roommapper.Insert(&roomModel, db)
-
+	// Link db room model to chatroom
 	room.RoomModel = &roomModel
-	return &room
+
+	return &room, nil
 }
-func CheckRoom(roomName string) bool {
-	fmt.Println("CheckRoom chatrooms")
-	fmt.Println(chatrooms)
+
+func CheckRoomExist(roomName string) bool {
 	if _, ok := chatrooms[roomName]; !ok {
 		return false
 	}
 	return true
 }
-func GetRoom(roomName string) *ChatRoom {
+
+func GetRoom(roomName string) (*ChatRoom, error) {
 
 	if room, ok := chatrooms[roomName]; ok {
-		return &room
+		return &room, nil
 	}
 	return createRoom(roomName)
 }
 
-// 7. start a room, loop until all subscribers leaves
+// Start a room, loop until all subscribers leaves
 func startRoom(room *ChatRoom) {
 	for {
 		select {
 
 		// handle new subscriber
 		case subscriptionChan := <-room.subscribeChan:
-			// 1. push to subsribers of this room
 
 			// send all events in room into events of current subscriber
 			var events []Event
@@ -115,6 +128,7 @@ func startRoom(room *ChatRoom) {
 			}
 			subscriber := make(chan Event)
 
+			// 1. push to subsribers of this room
 			room.subscribers.PushBack(subscriber)
 
 			subscriptionChan <- Subscription{
@@ -133,15 +147,16 @@ func startRoom(room *ChatRoom) {
 
 			// Check to close room
 			if room.subscribers.Len() == 0 {
-				fmt.Println("\t\t\t\troom.endRoom()\n")
-				room.endRoom()
+				log15.Debug("End room as zero subscriber")
+				err := room.endRoom()
+				if err != nil {
+					panic(err)
+				}
 				break
 			}
 		case mes := <-room.messageChan:
 			// mes is an event of Join, Leave or Message
 			// add to room event
-			fmt.Println("mes := <-room.messageChan:")
-			fmt.Println(mes)
 			room.events.PushBack(mes)
 
 			// send mes to all subscribers, this is also the chan that link to subscription coresponsing device
@@ -150,32 +165,35 @@ func startRoom(room *ChatRoom) {
 			}
 
 			// insert to DB new room event
-			room.insertEventModelToDb(&mes)
+			err := room.handleEventInDb(&mes)
 
-
+			if err != nil {
+				panic(err)
+			}
 		}
 
 	}
 }
 
 // 7. end a room, when all subscribers leaves
-func (room ChatRoom) endRoom() {
+func (room ChatRoom) endRoom() error {
 	cloudClient := cloud.Client()
 
 	// remove QR image
 	err := cloudClient.Delete(room.RoomName)
 	if err != nil {
-		fmt.Println(err)
+		return err
 	}
 
 	// delete from DB
-	room.deleteRoomFromDb(room.RoomModel)
+	err = room.deleteRoomFromDb(room.RoomModel)
+	if err != nil {
+		return err
+	}
 
 	delete(chatrooms, room.RoomName)
 
-	fmt.Println("endRoom chatrooms")
-	fmt.Println(chatrooms)
-	//delete QR code
+	return nil
 }
 
 // 4. Event : join, leave, message
@@ -186,12 +204,7 @@ type Event struct {
 	Message   string
 }
 
-// define Subscription
-type Subscription struct {
-	Events   []Event
-	NewEvent <-chan Event // avoid sending directly through subsription object
-	// but allow through subscribers list
-}
+
 
 // 5. Action Join, Leave, Message
 // 5.1 once Subscribe, device will receive Subscription {All events (limit ~20), and NewEvent chan Event}
@@ -235,13 +248,13 @@ func Message(subscriber Subscription, mes Event, roomName string) {
 	room.messageChan <- mes
 }
 
-func Join(device string, roomName string) {
+func Join(device string, roomName string) error{
 	// Get room
-	room:= GetRoom(roomName)
+	room, err := GetRoom(roomName)
 
-	//if !ok {
-	//	panic("Join failed, room not found")
-	//}
+	if err != nil {
+		return err
+	}
 
 	event := Event{
 		Type:      "JOIN",
@@ -252,32 +265,49 @@ func Join(device string, roomName string) {
 
 	room.messageChan <- event
 
+	return nil
 }
 
-func (chatRoom *ChatRoom) deleteRoomFromDb(room *models.Room) {
+func (chatRoom *ChatRoom) deleteRoomFromDb(room *models.Room) error{
+	db, err := db.Connect()
+	defer db.Close()
+	if err != nil {
+		return err
+	}
+
+	// Start transaction
+	tx := db.Begin()
+
+	roommapper.DeleteRoom(room, tx)
+
+	if tx.Error != nil {
+		tx.Rollback()
+		return tx.Error
+	}
+
+	tx.Commit()
+	// end transaction
+
+	return nil
+}
+
+func (chatRoom *ChatRoom) handleEventInDb(event *Event) error{
+	// connect DB
 	db, err := db.Connect()
 	defer db.Close()
 	if err != nil {
 		panic(err)
 	}
 
-	roommapper.DeleteRoom(room, db)
-}
-
-func (chatRoom *ChatRoom) insertEventModelToDb(event *Event) {
-	db, err := db.Connect()
-	defer db.Close()
-	if err != nil {
-		panic(err)
-	}
+	// start transaction
+	tx := db.Begin()
 
 	// get roomModel
-	roomModel := roommapper.SelectByName(chatRoom.RoomName, db)
+	roomModel := roommapper.SelectByName(chatRoom.RoomName, tx)
 
 	// create Device model
-	deviceModel := devicemapper.SelectByName(event.Device, db)
-	fmt.Println("deviceModel")
-	fmt.Println(deviceModel)
+	deviceModel := devicemapper.SelectByName(event.Device, tx)
+
 	if deviceModel.ID == 0 {
 		deviceModel = &models.Device{
 			Model:       gorm.Model{},
@@ -295,14 +325,20 @@ func (chatRoom *ChatRoom) insertEventModelToDb(event *Event) {
 		Message:  event.Message,
 	}
 
-	// start transaction
-	tx := db.Begin()
 	roommapper.InsertRoomEvent(roomModel, eventModel, tx)
 	if event.Type == "LEAVE" {
 		roommapper.RemoveDeviceFromRoom(roomModel, event.Device, tx)
 	}
+
+	if tx.Error != nil {
+		tx.Rollback()
+		return tx.Error
+	}
+
 	tx.Commit()
 	// end transaction
+
+	return nil
 }
 
 func Leave(device string, roomName string) {

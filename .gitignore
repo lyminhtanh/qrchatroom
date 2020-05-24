@@ -3,3 +3,4 @@ tmp/
 routes/
 public/img/
 gsservice_key.json
+test.db

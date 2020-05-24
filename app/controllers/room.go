@@ -16,12 +16,16 @@ func (c Room) RoomPage(device, roomName string) revel.Result {
 
 	device = c.Request.Header.Get("X-Forwarded-For")
 
-	isRoomExist := room.CheckRoom(roomName)
+	isRoomExist := room.CheckRoomExist(roomName)
 	if !isRoomExist {
 		return c.NotFound("Room does not exist")
 	}
 
-	chatroom := room.GetRoom(roomName)
+	chatroom, err := room.GetRoom(roomName)
+
+	if err != nil {
+		panic(err)
+	}
 
 	wsProtocol := revel.Config.StringDefault("ws.type", "ws")
 
