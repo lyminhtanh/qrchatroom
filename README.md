@@ -1,5 +1,5 @@
 # Welcome to QR Chatroom
-
+![Room](https://storage.googleapis.com/qrchatroom.appspot.com/Capture.PNG)
 ##User flow:
 
 1. User loads application on computer -> YES
